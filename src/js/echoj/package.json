@@ -1,0 +1,23 @@
+{
+  "name": "nodejs-cmd-template",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest",
+    "build": "tsup src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cac": "^6.7.14"
+  },
+  "bin": "./cli.js",
+  "devDependencies": {
+    "tsup": "^6.4.0",
+    "vitest": "^0.25.1",
+    "eslint": "^8.27.0",
+    "@mysteryzzz/eslint-config-ts": "^0.0.4"
+  }
+}
