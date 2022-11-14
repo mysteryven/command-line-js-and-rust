@@ -55,7 +55,29 @@ pub fn get_args() -> MyResult<Config> {
 
 pub fn run(config: Config) -> MyResult<()> {
     for filename in config.files {
-        println!("{}", filename)
+        match open(&filename) {
+            Ok(buf_reader) => {
+                let lines_iter = buf_reader.lines().map(|l| l.unwrap());
+                let mut count = 1;
+
+                for line in lines_iter {
+                    if config.number_line {
+                        println!("{:>6}\t{}", count, line);
+                        count = count + 1;
+                    } else if config.number_nonblank_line {
+                        if !line.is_empty() {
+                            println!("{:>6}\t{}", count, line);
+                            count = count + 1;
+                        } else {
+                            println!();
+                        }
+                    } else {
+                        println!("{}", line);
+                    }
+                }
+            }
+            Err(e) => eprint!("Failed to open {}: {}", filename, e),
+        }
     }
 
     Ok(())
@@ -63,7 +85,7 @@ pub fn run(config: Config) -> MyResult<()> {
 
 pub fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
     match filename {
-        "_" => Ok(Box::new(BufReader::new(io::stdin()))),
+        "-" => Ok(Box::new(BufReader::new(io::stdin()))),
         _ => Ok(Box::new(BufReader::new(File::open(filename)?))),
     }
 }
