@@ -1,3 +1,8 @@
+use std;
+
 fn main() {
-    println!("Hello, world!");
+    if let Err(e) = headr::get_args() {
+        eprint!(e);
+        std::process::exit(1)
+    }
 }
