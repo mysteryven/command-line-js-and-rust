@@ -17,9 +17,9 @@ pub fn get_args() -> MyResult<Config> {
         .about("Rust head")
         .arg(
             Arg::with_name("lines")
-                .value_name("LINE")
+                .value_name("LINES")
                 .short("n")
-                .long("line")
+                .long("lines")
                 .takes_value(true)
                 .default_value("10")
                 .help("Print count lines of each of the specified files."),
