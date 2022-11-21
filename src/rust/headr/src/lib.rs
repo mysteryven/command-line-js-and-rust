@@ -2,7 +2,7 @@ use clap::{App, Arg};
 use std::{
     error::Error,
     fs::File,
-    io::{self, BufRead, BufReader},
+    io::{self, BufRead, BufReader, Read},
 };
 
 type MyResult<T> = Result<T, Box<dyn Error>>;
@@ -62,27 +62,40 @@ pub fn get_args() -> MyResult<Config> {
 }
 
 pub fn run(config: Config) -> MyResult<()> {
-    for (index, filename) in config.files.iter().enumerate() {
-        match open(&filename) {
+    let num_files = config.files.len();
+
+    for (file_num, filename) in config.files.iter().enumerate() {
+        match open(filename) {
+            Err(err) => eprintln!("{}: {}", filename, err),
             Ok(mut file) => {
-                let line = config.bytes;
-                if let Some(num_bytes) = config.bytes {
+                if num_files > 1 {
+                    println!(
+                        "{}==> {} <==",
+                        if file_num > 0 { "\n" } else { "" },
+                        filename
+                    )
+                }
+
+                if let Some(byte_nums) = config.bytes {
+                    let mut handler = file.take(byte_nums as u64);
+                    let mut buffer = vec![0; byte_nums];
+                    let bytes_read = handler.read(&mut buffer)?;
+                    print!("{}", String::from_utf8_lossy(&buffer[..bytes_read]));
                 } else {
-                    let mut line = String::from("");
+                    let mut line = String::new();
+
                     for _ in 0..config.lines {
                         let bytes = file.read_line(&mut line)?;
                         if bytes == 0 {
                             break;
-                        };
-                        println!("{}", line);
-                        line.clear()
+                        }
+                        print!("{}", line);
+                        line.clear();
                     }
                 }
             }
-            Err(e) => eprintln!("head: not: {}", e),
         }
     }
-
     Ok(())
 }
 
@@ -95,7 +108,7 @@ pub fn parse_positive_int(val: &str) -> MyResult<usize> {
 
 pub fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
     match filename {
-        "_" => Ok(Box::new(BufReader::new(io::stdin()))),
+        "-" => Ok(Box::new(BufReader::new(io::stdin()))),
         _ => Ok(Box::new(BufReader::new(File::open(filename)?))),
     }
 }
