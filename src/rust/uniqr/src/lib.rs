@@ -12,7 +12,7 @@ type MyResult<T> = Result<T, Box<dyn Error>>;
 
 pub fn get_args() -> MyResult<Config> {
 
-  App::new("uniqr").version("0.1.0")
+  let matches = App::new("uniqr").version("0.1.0")
   .author("mysterven mysteryven@gmail.com")
   .about("Rust uniq")
   .arg(
@@ -24,11 +24,14 @@ pub fn get_args() -> MyResult<Config> {
     line occurred in the input").long("count").short("c")
   ).get_matches();
 
+  
+  let in_file = matches.value_of("in_file").map(String::from).unwrap();
+  let out_file = matches.value_of("out_file").map(String::from);
 
   Ok(Config {
-    in_file: String::from("1"),
-    out_file: None,
-    count: false
+    in_file,
+    out_file,
+    count: matches.is_present("count")
   })
 }
 
