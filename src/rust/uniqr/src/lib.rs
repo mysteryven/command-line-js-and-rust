@@ -62,20 +62,25 @@ pub fn run(config: Config) -> MyResult<()> {
 
     let mut write = get_writer(&config.out_file)?;
 
+    let mut print_content = |count: usize, content: &String| -> MyResult<()> {
+        if count > 0 {
+            let content = format!("{}{}", format_count(count, config.count), content);
+            write.write(content.as_bytes())?;
+        }
+
+        Ok(())
+    };
+
     loop {
         let bytes = file.read_line(&mut line)?;
         if bytes == 0 {
-            if count > 0 {
-                print_content(count, config.count, &previous, &mut write)?;
-            }
+            print_content(count, &previous)?;
             break;
         }
 
         if line.trim_end() != previous.trim_end() {
-            if count > 0 {
-                print_content(count, config.count, &previous, &mut write)?;
-                count = 0;
-            }
+            print_content(count, &previous)?;
+            count = 0;
             previous = line.clone();
         }
 
@@ -92,17 +97,6 @@ pub fn format_count(count: usize, show: bool) -> String {
     } else {
         "".to_string()
     }
-}
-
-pub fn print_content(
-    count: usize,
-    show_count: bool,
-    content: &str,
-    writer: &mut Box<dyn Write>,
-) -> MyResult<()> {
-    let content = format!("{}{}", format_count(count, show_count), content);
-    writer.write(content.as_bytes())?;
-    Ok(())
 }
 
 pub fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
