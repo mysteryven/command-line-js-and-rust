@@ -60,31 +60,47 @@ pub fn run(config: Config) -> MyResult<()> {
     let mut line = String::new();
     let mut last: String = String::new();
     let mut last_count: usize = 0;
+    let mut index = 0;
 
     loop {
         let bytes = file.read_line(&mut line)?;
         if bytes == 0 {
-            print!("{}{}", format_count(&last_count, config.count), last);
+            print_content(last_count, config.count, &last, &config.out_file);
             break;
         }
 
-        if last != line {
-            print!("{}{}", format_count(&last_count, config.count), last);
-            last_count = 0;
-            last = line.clone();
+        if last != line && index != 0 {
+            print_content(last_count, config.count, &last, &config.out_file);
+            last_count = 1;
+        } else {
+          last_count += 1
         }
 
+        last = line.clone();
+
         line.clear();
+        index += 1;
     }
 
     Ok(())
 }
 
-pub fn format_count(count: &usize, show: bool) -> String {
+pub fn format_count(count: usize, show: bool) -> String {
     if show == true {
         format!("{:>4} ", count)
     } else {
         "".to_string()
+    }
+}
+
+pub fn print_content(count: usize, show_count: bool, content: &str, out_file: &Option<String>) {
+    match out_file {
+        Some(filename) => {
+            print!("{}{}", format_count(count, show_count), content);
+        }
+        None => {
+            print!("{}{}", format_count(count, show_count), content);
+        }
     }
 }
 
