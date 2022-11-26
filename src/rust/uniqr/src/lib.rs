@@ -55,32 +55,32 @@ pub fn get_args() -> MyResult<Config> {
 }
 
 pub fn run(config: Config) -> MyResult<()> {
-    let mut file = open(&config.in_file).map_err(|e| format!("{} {}", config.in_file, e))?;
+    let mut file = open(&config.in_file).map_err(|e| format!("{}:  {}", config.in_file, e))?;
     let mut line = String::new();
-    let mut last: String = String::new();
-    let mut last_count: usize = 0;
-    let mut index = 0;
+    let mut previous: String = String::new();
+    let mut count: usize = 0;
 
     let mut write = get_writer(&config.out_file)?;
 
     loop {
         let bytes = file.read_line(&mut line)?;
         if bytes == 0 {
-            print_content(last_count, config.count, &last, &mut write)?;
+            if count > 0 {
+                print_content(count, config.count, &previous, &mut write)?;
+            }
             break;
         }
 
-        if last != line && index != 0 {
-            print_content(last_count, config.count, &last, &mut write)?;
-            last_count = 1;
-        } else {
-            last_count += 1
+        if line.trim_end() != previous.trim_end() {
+            if count > 0 {
+                print_content(count, config.count, &previous, &mut write)?;
+                count = 0;
+            }
+            previous = line.clone();
         }
 
-        last = line.clone();
-
+        count += 1;
         line.clear();
-        index += 1;
     }
 
     Ok(())
@@ -94,7 +94,12 @@ pub fn format_count(count: usize, show: bool) -> String {
     }
 }
 
-pub fn print_content(count: usize, show_count: bool, content: &str, writer: &mut Box<dyn Write>) -> MyResult<()> {
+pub fn print_content(
+    count: usize,
+    show_count: bool,
+    content: &str,
+    writer: &mut Box<dyn Write>,
+) -> MyResult<()> {
     let content = format!("{}{}", format_count(count, show_count), content);
     writer.write(content.as_bytes())?;
     Ok(())
