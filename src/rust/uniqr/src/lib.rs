@@ -1,9 +1,8 @@
 use clap::{App, Arg};
 use std::{
     error::Error,
-    fmt::format,
     fs::File,
-    io::{self, BufRead, BufReader},
+    io::{self, BufRead, BufReader, BufWriter, Write},
 };
 
 #[derive(Debug)]
@@ -62,18 +61,20 @@ pub fn run(config: Config) -> MyResult<()> {
     let mut last_count: usize = 0;
     let mut index = 0;
 
+    let mut write = get_writer(&config.out_file)?;
+
     loop {
         let bytes = file.read_line(&mut line)?;
         if bytes == 0 {
-            print_content(last_count, config.count, &last, &config.out_file);
+            print_content(last_count, config.count, &last, &mut write)?;
             break;
         }
 
         if last != line && index != 0 {
-            print_content(last_count, config.count, &last, &config.out_file);
+            print_content(last_count, config.count, &last, &mut write)?;
             last_count = 1;
         } else {
-          last_count += 1
+            last_count += 1
         }
 
         last = line.clone();
@@ -93,20 +94,22 @@ pub fn format_count(count: usize, show: bool) -> String {
     }
 }
 
-pub fn print_content(count: usize, show_count: bool, content: &str, out_file: &Option<String>) {
-    match out_file {
-        Some(filename) => {
-            print!("{}{}", format_count(count, show_count), content);
-        }
-        None => {
-            print!("{}{}", format_count(count, show_count), content);
-        }
-    }
+pub fn print_content(count: usize, show_count: bool, content: &str, writer: &mut Box<dyn Write>) -> MyResult<()> {
+    let content = format!("{}{}", format_count(count, show_count), content);
+    writer.write(content.as_bytes())?;
+    Ok(())
 }
 
 pub fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
     match filename {
         "-" => Ok(Box::new(BufReader::new(io::stdin()))),
         _ => Ok(Box::new(BufReader::new(File::open(filename)?))),
+    }
+}
+
+pub fn get_writer(out_file: &Option<String>) -> MyResult<Box<dyn Write>> {
+    match out_file {
+        Some(filename) => Ok(Box::new(BufWriter::new(File::create(filename)?))),
+        None => Ok(Box::new(BufWriter::new(io::stdout()))),
     }
 }
