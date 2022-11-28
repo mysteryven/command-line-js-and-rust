@@ -25,7 +25,7 @@ pub fn get_args() -> MyResult<Config> {
         .author("mysteryven <mysteryven@gmail.com>")
         .about("Rust find")
         .arg(
-            Arg::with_name("name")
+            Arg::with_name("names")
                 .value_name("NAME")
                 .short("n")
                 .long("name")
@@ -34,7 +34,7 @@ pub fn get_args() -> MyResult<Config> {
                 .help("Name"),
         )
         .arg(
-            Arg::with_name("type")
+            Arg::with_name("types")
                 .value_name("TYPE")
                 .short("t")
                 .multiple(true)
@@ -42,7 +42,7 @@ pub fn get_args() -> MyResult<Config> {
                 .long("type"),
         )
         .arg(
-            Arg::with_name("path")
+            Arg::with_name("paths")
                 .value_name("PATH")
                 .default_value(".")
                 .multiple(true),
@@ -50,33 +50,30 @@ pub fn get_args() -> MyResult<Config> {
         .get_matches();
 
     let paths = matches.values_of_lossy("path").unwrap();
-    let mut names_reg: Vec<Regex> = vec![];
-    let mut entry_types_final: Vec<EntryType> = vec![];
 
-    if matches.is_present("name") {
-        let names = matches.values_of_lossy("name").unwrap();
-        for name in names {
-            names_reg.push(Regex::new(&name)?)
-        }
-    }
+    let names = matches
+        .values_of_lossy("names")
+        .map(|vals| {
+            vals.into_iter()
+                .map(|name| Regex::new(&name).map_err(|_| format!("Invalid --name \"{}\"", name)))
+                .collect::<Result<Vec<_>, _>>()
+        })
+        .transpose()?
+        .unwrap_or_default();
 
-    if matches.is_present("type") {
-        let entry_types = matches.values_of_lossy("type").unwrap();
-        for entry_type in entry_types {
-            if &entry_type == "f" {
-                entry_types_final.push(File);
-            } else if &entry_type == "l" {
-                entry_types_final.push(Link);
-            } else {
-                entry_types_final.push(Dir);
-            }
-        }
-    }
+    let entry_types = matches.values_of_lossy("types").map(|vals| {
+        vals.into_iter().map(|val| match val.as_str() {
+            "f" => File,
+            "d" => Dir,
+            "l" => Link,
+            _ => unreachable!("Invalid type")
+        }).collect()
+    }).unwrap_or_default();
 
     Ok(Config {
         paths,
-        names: names_reg,
-        entry_types: entry_types_final,
+        names,
+        entry_types,
     })
 }
 
